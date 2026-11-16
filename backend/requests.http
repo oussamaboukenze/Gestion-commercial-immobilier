@@ -1,0 +1,125 @@
+### =====================================================================
+### GECIMMO - scénario complet (client HTTP IntelliJ : bouton ▶ à gauche)
+### Pré-requis : docker compose up -d + les 6 services démarrés
+### Mot de passe de tous les utilisateurs de test : Gecimmo2026!
+### =====================================================================
+
+@gw = http://localhost:8080
+@kc = http://localhost:8180/realms/ahi/protocol/openid-connect/token
+
+### 1. Token commercial1
+POST {{kc}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=gecimmo-web&username=commercial1&password=Gecimmo2026!
+
+> {% client.global.set("tCom", response.body.access_token); %}
+
+### 2. Token adv1
+POST {{kc}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=gecimmo-web&username=adv1&password=Gecimmo2026!
+
+> {% client.global.set("tAdv", response.body.access_token); %}
+
+### 3. Token comptable1
+POST {{kc}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=gecimmo-web&username=comptable1&password=Gecimmo2026!
+
+> {% client.global.set("tCpt", response.body.access_token); %}
+
+### 4. Commercial : lots F3 disponibles sur RNA
+GET {{gw}}/api/referentiel/lots?projet=RNA&typologie=F3&statut=DISPONIBLE
+Authorization: Bearer {{tCom}}
+
+> {% client.global.set("lotId", response.body.content[0].id); %}
+
+### 5. Commercial : nouveau prospect
+POST {{gw}}/api/crm/prospects
+Authorization: Bearer {{tCom}}
+Content-Type: application/json
+
+{
+  "nom": "Alami", "prenom": "Sara", "telephone": "0612345678", "cin": "BE123456",
+  "source": "SITE_WEB", "budget": 1100000, "typologieRecherchee": "F3", "projetCode": "RNA"
+}
+
+> {% client.global.set("prospectId", response.body.id); %}
+
+### 6. Commercial : option 48 h sur le lot
+POST {{gw}}/api/ventes/options
+Authorization: Bearer {{tCom}}
+Content-Type: application/json
+
+{ "lotId": {{lotId}}, "prospectId": {{prospectId}} }
+
+### 7. Commercial : réservation (avance >= 5 %) -> "En attente de validation ADV"
+POST {{gw}}/api/ventes/reservations
+Authorization: Bearer {{tCom}}
+Content-Type: application/json
+
+{
+  "lotId": {{lotId}}, "prospectId": {{prospectId}}, "remisePct": 1, "avance": 60000,
+  "pieceCin": true, "pieceJustificatifRevenus": true, "pieceRecuAvance": true
+}
+
+> {% client.global.set("resaId", response.body.id); %}
+
+### 8. ADV : validation AVANT encaissement -> refusée (avance non confirmée)
+POST {{gw}}/api/ventes/reservations/{{resaId}}/valider
+Authorization: Bearer {{tAdv}}
+
+### 9. Comptable : encaissement de l'avance (reçu généré, événement RabbitMQ -> vente)
+POST {{gw}}/api/tresorerie/encaissements
+Authorization: Bearer {{tCpt}}
+Content-Type: application/json
+
+{
+  "reservationId": {{resaId}}, "montant": 60000, "mode": "CHEQUE",
+  "numeroCheque": "0012345", "banque": "Banque Populaire", "dateEncaissement": "2026-11-16"
+}
+
+> {% client.global.set("encId", response.body.id); %}
+
+### 10. ADV : validation -> lot "RESERVE", prospect "CONVERTI" (événements)
+POST {{gw}}/api/ventes/reservations/{{resaId}}/valider
+Authorization: Bearer {{tAdv}}
+
+### 11. Vérifier le statut du lot
+GET {{gw}}/api/referentiel/lots/{{lotId}}
+Authorization: Bearer {{tCom}}
+
+### 12. ADV : établir le compromis (échéancier 20/30/50)
+POST {{gw}}/api/ventes/compromis
+Authorization: Bearer {{tAdv}}
+Content-Type: application/json
+
+{ "reservationId": {{resaId}} }
+
+> {% client.global.set("compromisId", response.body.id); %}
+
+### 13. Comptable : versement complémentaire pour atteindre 20 %
+POST {{gw}}/api/tresorerie/encaissements
+Authorization: Bearer {{tCpt}}
+Content-Type: application/json
+
+{ "reservationId": {{resaId}}, "montant": 150000, "mode": "VIREMENT", "reference": "VIR-889", "dateEncaissement": "2026-11-16" }
+
+### 14. ADV : signature du compromis -> lot "COMPROMIS_SIGNE"
+POST {{gw}}/api/ventes/compromis/{{compromisId}}/signer
+Authorization: Bearer {{tAdv}}
+
+### 15. Echéancier du dossier
+GET {{gw}}/api/ventes/reservations/{{resaId}}/echeancier
+Authorization: Bearer {{tAdv}}
+
+### 16. Reçu imprimable (HTML)
+GET {{gw}}/api/tresorerie/encaissements/{{encId}}/recu
+Authorization: Bearer {{tCpt}}
+
+### 17. Export Sage du mois
+GET {{gw}}/api/tresorerie/exports/sage?du=2026-11-01&au=2026-11-30
+Authorization: Bearer {{tCpt}}
