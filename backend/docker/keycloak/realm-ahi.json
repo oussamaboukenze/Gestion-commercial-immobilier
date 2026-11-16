@@ -1,0 +1,355 @@
+{
+  "realm": "ahi",
+  "enabled": true,
+  "displayName": "Atlas Horizon Immobilier - GECIMMO",
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 28800,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "roles": {
+    "realm": [
+      {
+        "name": "COMMERCIAL",
+        "description": "Profil GECIMMO COMMERCIAL"
+      },
+      {
+        "name": "ADV",
+        "description": "Profil GECIMMO ADV"
+      },
+      {
+        "name": "COMPTABLE",
+        "description": "Profil GECIMMO COMPTABLE"
+      },
+      {
+        "name": "ADMIN_SI",
+        "description": "Profil GECIMMO ADMIN_SI"
+      },
+      {
+        "name": "RESP_COMMERCIAL",
+        "description": "Profil GECIMMO RESP_COMMERCIAL"
+      },
+      {
+        "name": "DAF",
+        "description": "Profil GECIMMO DAF"
+      },
+      {
+        "name": "SAV",
+        "description": "Profil GECIMMO SAV"
+      },
+      {
+        "name": "DIRECTION",
+        "description": "Profil GECIMMO DIRECTION"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "projet-RNA",
+      "path": "/projet-RNA"
+    },
+    {
+      "name": "projet-JBK",
+      "path": "/projet-JBK"
+    },
+    {
+      "name": "projet-OCE",
+      "path": "/projet-OCE"
+    },
+    {
+      "name": "projet-SAL",
+      "path": "/projet-SAL"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "gecimmo-web",
+      "name": "GECIMMO Web (React)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*##http://localhost:3000/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "gecimmo-mobile",
+      "name": "GECIMMO Mobile (Flutter)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "ma.ahi.gecimmo:/oauthredirect",
+        "ma.ahi.gecimmo:/*"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "gecimmo-admin",
+      "name": "GECIMMO admin-service (compte de service)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "gecimmo-admin-secret",
+      "clientAuthenticatorType": "client-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "commercial1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Youssef",
+      "lastName": "Alaoui",
+      "email": "commercial1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "COMMERCIAL"
+      ],
+      "groups": [
+        "/projet-RNA",
+        "/projet-JBK"
+      ]
+    },
+    {
+      "username": "commercial2",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Salma",
+      "lastName": "Bennani",
+      "email": "commercial2@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "COMMERCIAL"
+      ],
+      "groups": [
+        "/projet-RNA"
+      ]
+    },
+    {
+      "username": "adv1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Nadia",
+      "lastName": "Tazi",
+      "email": "adv1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADV"
+      ],
+      "groups": [
+        "/projet-RNA",
+        "/projet-JBK",
+        "/projet-OCE",
+        "/projet-SAL"
+      ]
+    },
+    {
+      "username": "comptable1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Karim",
+      "lastName": "Idrissi",
+      "email": "comptable1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "COMPTABLE"
+      ],
+      "groups": [
+        "/projet-RNA",
+        "/projet-JBK",
+        "/projet-OCE",
+        "/projet-SAL"
+      ]
+    },
+    {
+      "username": "resp1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Hicham",
+      "lastName": "Fassi",
+      "email": "resp1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "RESP_COMMERCIAL"
+      ],
+      "groups": [
+        "/projet-RNA",
+        "/projet-JBK",
+        "/projet-OCE",
+        "/projet-SAL"
+      ]
+    },
+    {
+      "username": "daf1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Leila",
+      "lastName": "Chraibi",
+      "email": "daf1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "DAF"
+      ],
+      "groups": [
+        "/projet-RNA",
+        "/projet-JBK",
+        "/projet-OCE",
+        "/projet-SAL"
+      ]
+    },
+    {
+      "username": "direction1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Omar",
+      "lastName": "Berrada",
+      "email": "direction1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "DIRECTION"
+      ],
+      "groups": []
+    },
+    {
+      "username": "admin1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "SI",
+      "email": "admin1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN_SI"
+      ],
+      "groups": []
+    },
+    {
+      "username": "sav1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Rachid",
+      "lastName": "Amrani",
+      "email": "sav1@ahi.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Gecimmo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SAV"
+      ],
+      "groups": [
+        "/projet-RNA",
+        "/projet-JBK",
+        "/projet-OCE",
+        "/projet-SAL"
+      ]
+    },
+    {
+      "username": "service-account-gecimmo-admin",
+      "enabled": true,
+      "serviceAccountClientId": "gecimmo-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "query-groups",
+          "view-realm"
+        ]
+      }
+    }
+  ]
+}

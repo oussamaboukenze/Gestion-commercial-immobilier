@@ -1,0 +1,154 @@
+# GECIMMO - infrastructure de développement
+#   Tout lancer (seul Docker est nécessaire) : double-clic sur lancer.bat à la racine du projet
+#   docker compose up -d                 -> PostgreSQL + RabbitMQ + Keycloak (services lancés depuis IntelliJ)
+#   docker compose --profile apps up -d  -> tout, y compris les microservices (après "mvn clean package")
+name: gecimmo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: gecimmo
+      POSTGRES_PASSWORD: gecimmo
+      POSTGRES_DB: gecimmo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gecimmo"]
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: gecimmo
+      RABBITMQ_DEFAULT_PASS: gecimmo
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # console : http://localhost:15672 (gecimmo / gecimmo)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+    ports:
+      - "8180:8080"     # console : http://localhost:8180 (admin / admin)
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+
+  # ---------- Microservices (profil "apps") ----------
+  discovery-service:
+    profiles: ["apps"]
+    build: { context: ., target: discovery }
+    restart: on-failure
+    ports:
+      - "8761:8761"
+
+  gateway-service:
+    profiles: ["apps"]
+    build: { context: ., target: gateway }
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    environment: &common-env
+      EUREKA_URL: http://discovery-service:8761/eureka
+      KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/ahi/protocol/openid-connect/certs
+      RABBIT_HOST: rabbitmq
+    depends_on: [discovery-service, keycloak]
+
+  referentiel-service:
+    profiles: ["apps"]
+    build: { context: ., target: referentiel }
+    restart: on-failure
+    environment:
+      <<: *common-env
+      DB_URL: jdbc:postgresql://postgres:5432/referentiel_db
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      discovery-service: { condition: service_started }
+
+  crm-service:
+    profiles: ["apps"]
+    build: { context: ., target: crm }
+    restart: on-failure
+    environment:
+      <<: *common-env
+      DB_URL: jdbc:postgresql://postgres:5432/crm_db
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      discovery-service: { condition: service_started }
+
+  vente-service:
+    profiles: ["apps"]
+    build: { context: ., target: vente }
+    restart: on-failure
+    environment:
+      <<: *common-env
+      DB_URL: jdbc:postgresql://postgres:5432/vente_db
+      STOCKAGE_PIECES: /data/pieces
+    volumes:
+      - pieces:/data/pieces
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      discovery-service: { condition: service_started }
+
+  tresorerie-service:
+    profiles: ["apps"]
+    build: { context: ., target: tresorerie }
+    restart: on-failure
+    environment:
+      <<: *common-env
+      DB_URL: jdbc:postgresql://postgres:5432/tresorerie_db
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      discovery-service: { condition: service_started }
+
+  postvente-service:
+    profiles: ["apps"]
+    build: { context: ., target: postvente }
+    restart: on-failure
+    environment:
+      <<: *common-env
+      DB_URL: jdbc:postgresql://postgres:5432/postvente_db
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      discovery-service: { condition: service_started }
+
+  admin-service:
+    profiles: ["apps"]
+    build: { context: ., target: admin }
+    restart: on-failure
+    environment:
+      <<: *common-env
+      DB_URL: jdbc:postgresql://postgres:5432/admin_db
+      KEYCLOAK_URL: http://keycloak:8080
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      discovery-service: { condition: service_started }
+
+  frontend:
+    profiles: ["apps"]
+    build: ../frontend
+    ports:
+      - "5173:80"
+    depends_on: [gateway-service]
+
+volumes:
+  pgdata:
+  pieces:
