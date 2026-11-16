@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Clés publiques de Keycloak pour vérifier la signature des tokens
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8180/realms/ahi/protocol/openid-connect/certs}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: referentiel
+              uri: lb://referentiel-service
+              predicates:
+                - Path=/api/referentiel/**
+            - id: crm
+              uri: lb://crm-service
+              predicates:
+                - Path=/api/crm/**
+            - id: ventes
+              uri: lb://vente-service
+              predicates:
+                - Path=/api/ventes/**
+            - id: tresorerie
+              uri: lb://tresorerie-service
+              predicates:
+                - Path=/api/tresorerie/**
+            - id: postvente
+              uri: lb://postvente-service
+              predicates:
+                - Path=/api/postvente/**
+            - id: admin
+              uri: lb://admin-service
+              predicates:
+                - Path=/api/admin/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+gecimmo:
+  cors:
+    # React (Vite) en dev. Ajouter l'URL de production ici.
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
