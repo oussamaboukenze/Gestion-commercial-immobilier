@@ -1,0 +1,15 @@
+# Java / Maven
+target/
+*.class
+# IDE
+.idea/
+*.iml
+.vscode/
+# Divers
+*.log
+.DS_Store
+.env
+# Node / Flutter (à venir)
+node_modules/
+build/
+.dart_tool/
